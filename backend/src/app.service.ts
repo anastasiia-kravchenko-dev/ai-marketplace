@@ -5,7 +5,7 @@ export class AppService {
   getHealth(): { status: string; service: string } {
     return {
       status: 'ok',
-      service: 'ai-marketplace'
+      service: 'ai-marketplace',
     };
   }
 }
