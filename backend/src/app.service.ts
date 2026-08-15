@@ -6,7 +6,7 @@ export class AppService {
     return {
       status: 'ok',
       service: 'ai-marketplace',
-      version: '1.0.0',
+      version: '1.0.0fff',
     };
   }
 }
