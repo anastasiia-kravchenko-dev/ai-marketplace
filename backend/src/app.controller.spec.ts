@@ -19,6 +19,7 @@ describe('AppController', () => {
       expect(appController.getHealth()).toEqual({
         status: 'ok',
         service: 'ai-marketplace',
+        version: '1.0.0',
       });
     });
   });
