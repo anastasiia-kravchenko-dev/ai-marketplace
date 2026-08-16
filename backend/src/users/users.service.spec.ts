@@ -1,3 +1,4 @@
+import { jest } from '@jest/globals';
 import { Test, TestingModule } from '@nestjs/testing';
 import { UsersService } from './users.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
