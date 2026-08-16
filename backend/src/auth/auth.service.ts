@@ -30,7 +30,7 @@ export class AuthService {
       password: hashedPassword,
     });
 
-    const { password, ...res } = newUser;
+    const { password: _password, ...res } = newUser;
 
     return res;
   }
@@ -52,6 +52,6 @@ export class AuthService {
 
     return {
       accessToken: await this.jwtService.signAsync(payload),
-    }
+    };
   }
 }

@@ -37,7 +37,7 @@ export class UsersService {
     return this.prismaService.user.findUnique({
       where: {
         email: email,
-      }
-    })
+      },
+    });
   }
 }

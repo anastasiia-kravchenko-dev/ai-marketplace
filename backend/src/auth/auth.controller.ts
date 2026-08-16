@@ -30,7 +30,7 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Get('me')
-  getMe(@Req() req) {
+  getMe(@Req() req: { user: Record<string, unknown> }) {
     return req.user;
   }
 }
