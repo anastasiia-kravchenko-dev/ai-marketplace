@@ -10,10 +10,10 @@ export class UsersService {
     return this.prismaService.user.findMany();
   }
 
-  async getUser(id: string) {
+  async getUser(id: number) {
     const user = await this.prismaService.user.findUnique({
       where: {
-        id: Number(id),
+        id: id,
       },
     });
 
@@ -38,6 +38,18 @@ export class UsersService {
       where: {
         email: email,
       },
+    });
+  }
+
+  async updateUser(
+    userId: number,
+    data: Partial<{ hashedRt: string | null; email: string; password: string }>,
+  ) {
+    return this.prismaService.user.update({
+      where: {
+        id: Number(userId),
+      },
+      data,
     });
   }
 }
