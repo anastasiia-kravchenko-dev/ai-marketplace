@@ -1,5 +1,6 @@
 import {
   ConflictException,
+  ForbiddenException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -16,6 +17,41 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
+  private async getTokens(userId: number, email: string, role: string) {
+    const payload = { sub: userId, email, role };
+
+    const [accessToken, refreshToken] = await Promise.all([
+      this.jwtService.signAsync(payload, {
+        secret: process.env.JWT_SECRET,
+        expiresIn: '15m',
+      }),
+      this.jwtService.signAsync(payload, {
+        secret: process.env.JWT_REFRESH_SECRET,
+        expiresIn: '7d',
+      }),
+    ]);
+
+    return {
+      accessToken,
+      refreshToken,
+    };
+  }
+
+  private async updateRefreshTokenHash(
+    userId: number,
+    refreshToken: string | null,
+  ) {
+    if (!refreshToken) {
+      await this.usersService.updateUser(userId, {
+        hashedRt: null,
+      });
+      return;
+    }
+
+    const hash = await bcrypt.hash(refreshToken, 10);
+    await this.usersService.updateUser(userId, { hashedRt: hash });
+  }
+
   async register(body: RegisterDto) {
     const user = await this.usersService.findByEmail(body.email);
 
@@ -30,9 +66,14 @@ export class AuthService {
       password: hashedPassword,
     });
 
-    const { password: _password, ...res } = newUser;
+    const tokens = await this.getTokens(
+      newUser.id,
+      newUser.email,
+      newUser.role,
+    );
+    await this.updateRefreshTokenHash(newUser.id, tokens.refreshToken);
 
-    return res;
+    return tokens;
   }
 
   async login(body: LoginDto) {
@@ -48,10 +89,33 @@ export class AuthService {
       throw new UnauthorizedException('Incorrect email or password');
     }
 
-    const payload = { sub: user.id, email: user.email };
+    const tokens = await this.getTokens(user.id, user.email, user.role);
+    await this.updateRefreshTokenHash(user.id, tokens.refreshToken);
 
-    return {
-      accessToken: await this.jwtService.signAsync(payload),
-    };
+    return tokens;
+  }
+
+  async logout(userId: number) {
+    await this.updateRefreshTokenHash(userId, null);
+    return { message: 'Logged out successfully' };
+  }
+
+  async refreshTokens(userId: number, refreshToken: string) {
+    const user = await this.usersService.getUser(userId);
+
+    if (!user || !user.hashedRt) {
+      throw new ForbiddenException('Access denied');
+    }
+
+    const rtMatches = await bcrypt.compare(refreshToken, user.hashedRt);
+
+    if (!rtMatches) {
+      throw new ForbiddenException('Access denied');
+    }
+
+    const tokens = await this.getTokens(user.id, user.email, user.role);
+    await this.updateRefreshTokenHash(user.id, tokens.refreshToken);
+
+    return tokens;
   }
 }
